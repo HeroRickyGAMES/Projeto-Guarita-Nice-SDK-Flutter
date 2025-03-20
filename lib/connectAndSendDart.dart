@@ -103,67 +103,56 @@ Future<void> connectAndSend(String ip, int port, String rele, bool gerarEvento, 
         enviarComando(socket, Uint8List.fromList(lFrame));
         break;
       case "5":
-        // Comando 2 - 0x00 + 0x5C + <tipo_disp> + <num_disp> + <rele> + <gera_evt> + <cs> + <tempo> + <cs>
-
-        acionaReleAvancado('TX', '00', '06');
-        //lFrame = List.filled(9, 0);
-        //lFrame[0] = 0x00;
-        //lFrame[1] = 0x5C;
-        //lFrame[2] = tipoDisp;
-        //lFrame[3] = can;
-        //lFrame[4] = 0x08;
-        //lFrame[5] = 0x01;
-        //lFrame[6] = calculateChecksum(lFrame.sublist(0, 6));
-        //lFrame[7] = 0x01;
-        //lFrame[8] = calculateChecksum(lFrame.sublist(0, 8));
-        //enviarComandoAuxiliar(socket, Uint8List.fromList(lFrame));
+        // Comando 2 - 0x00 + 0x5C + <tipo_disp> + <num_disp> + <rele> + <gerar_evt> + tempo + <cs>
+        List<int> lFrame = List.filled(7, 0);
+        lFrame[0] = 0x00;
+        lFrame[1] = 0x5C;
+        lFrame[2] = tipoDisp;
+        lFrame[3] = can;
+        lFrame[4] = 0x05;
+        lFrame[5] = 0x01;
+        lFrame[6] = 0x01;
+        enviarComando(socket, Uint8List.fromList(lFrame));
         break;
 
       case "6":
       // Comando 2 - 0x00 + 0x5C + <tipo_disp> + <num_disp> + <rele> + <gera_evt> + <cs> + <tempo> + <cs>
-        List<int> lFrame = List.filled(9, 0);
-
-        lFrame[0] = 0x00;  // Prefixo fixo
-        lFrame[1] = 0x5C;  // Código da função
-        lFrame[2] = 0x00;
-        lFrame[3] = 0x06;
-        lFrame[4] = 0xFF;
-        lFrame[5] = 0x01 ;
-        lFrame[6] = 0xFF;
-
-        // Calcula o checksum considerando os primeiros 7 bytes
-        lFrame[7] = calculateChecksum(lFrame.sublist(0, 7));
-
-        lFrame[8] = 0x01;  // Campo fixo conforme seu código original
-        enviarComandoAuxiliar(socket, Uint8List.fromList(lFrame));
+      // Comando 2 - 0x00 + 0x5C + <tipo_disp> + <num_disp> + <rele> + <gerar_evt> + tempo + <cs>
+        List<int> lFrame = List.filled(7, 0);
+        lFrame[0] = 0x00;
+        lFrame[1] = 0x5C;
+        lFrame[2] = tipoDisp;
+        lFrame[3] = can;
+        lFrame[4] = 0x06;
+        lFrame[5] = 0x01;
+        lFrame[6] = 0x01;
+        enviarComando(socket, Uint8List.fromList(lFrame));
         break;
       case "7":
       // Comando 2 - 0x00 + 0x5C + <tipo_disp> + <num_disp> + <rele> + <gera_evt> + <cs> + <tempo> + <cs>
-        lFrame = List.filled(9, 0);
+      // Comando 2 - 0x00 + 0x5C + <tipo_disp> + <num_disp> + <rele> + <gerar_evt> + tempo + <cs>
+        List<int> lFrame = List.filled(7, 0);
         lFrame[0] = 0x00;
         lFrame[1] = 0x5C;
         lFrame[2] = tipoDisp;
         lFrame[3] = can;
         lFrame[4] = 0x07;
         lFrame[5] = 0x01;
-        lFrame[6] = calculateChecksum(lFrame.sublist(0, 6));
-        lFrame[7] = 0x01;
-        lFrame[8] = calculateChecksum(lFrame.sublist(0, 8));
-        enviarComandoAuxiliar(socket, Uint8List.fromList(lFrame));
+        lFrame[6] = 0x01;
+        enviarComando(socket, Uint8List.fromList(lFrame));
         break;
       case "8":
       // Comando 2 - 0x00 + 0x5C + <tipo_disp> + <num_disp> + <rele> + <gera_evt> + <cs> + <tempo> + <cs>
-        lFrame = List.filled(9, 0);
+      // Comando 2 - 0x00 + 0x5C + <tipo_disp> + <num_disp> + <rele> + <gerar_evt> + tempo + <cs>
+        List<int> lFrame = List.filled(7, 0);
         lFrame[0] = 0x00;
         lFrame[1] = 0x5C;
         lFrame[2] = tipoDisp;
         lFrame[3] = can;
         lFrame[4] = 0x08;
         lFrame[5] = 0x01;
-        lFrame[6] = calculateChecksum(lFrame.sublist(0, 6));
-        lFrame[7] = 0x01;
-        lFrame[8] = calculateChecksum(lFrame.sublist(0, 8));
-        enviarComandoAuxiliar(socket, Uint8List.fromList(lFrame));
+        lFrame[6] = 0x01;
+        enviarComando(socket, Uint8List.fromList(lFrame));
         break;
 
       default:
