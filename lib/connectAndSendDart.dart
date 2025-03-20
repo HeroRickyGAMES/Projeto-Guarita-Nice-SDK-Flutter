@@ -1,0 +1,208 @@
+import 'dart:io';
+import 'dart:typed_data';
+
+//Programado por HeroRickyGAMES
+
+int cbDispTotipoDisp(int cbValor) {
+  switch (cbValor) {
+    case 0:
+      return 0x01; // Controle TX (RF)
+    case 1:
+      return 0x02; // TAG Ativo (TA)
+    case 2:
+      return 0x03; // Cartão (CT/CTW)
+    case 3:
+      return 0x05; // Biometria (BM)
+    case 4:
+      return 0x06; // TAG Passivo (TP/UHF)
+    case 5:
+      return 0x07; // Senha (SN)
+    default:
+      return 0x01; // Valor padrão (Controle TX)
+  }
+}
+
+
+/// Conecta ao servidor e envia comandos conforme o relé e tipo de dispositivo.
+Future<void> connectAndSend(String ip, int port, String rele, bool gerarEvento, int tipoDispIndex, int can) async {
+  try {
+    final socket = await Socket.connect(ip, port, timeout: Duration(seconds: 2));
+    print('Conectado ao servidor: ${socket.remoteAddress.address}:${socket.remotePort}');
+
+    int tipoDisp = tipoDispIndex; // Converte o índice para tipo de dispositivo
+
+    List<int> lFrame;
+
+    switch (rele) {
+    // Comando 1 - 0x00 + 0x0D + <tipo_disp> + <num_disp> + <num_saida> + <gera_evt> + <cs>
+      case "1":
+        lFrame = List.filled(6, 0);
+        lFrame[0] = 0x00;
+        lFrame[1] = 0x0D;
+        lFrame[2] = tipoDisp;
+        lFrame[3] = can;
+        lFrame[4] = 0x01;
+        lFrame[5] = gerarEvento ? 0x01 : 0x00;
+        enviarComando(socket, Uint8List.fromList(lFrame));
+        break;
+      case "2":
+      // Comando 1 - 0x00 + 0x0D + <tipo_disp> + <num_disp> + <num_saida> + <gera_evt> + <cs>
+        lFrame = List.filled(6, 0);
+        lFrame[0] = 0x00;
+        lFrame[1] = 0x0D;
+        lFrame[2] = tipoDisp;
+        lFrame[3] = can;
+        lFrame[4] = 0x02;
+        lFrame[5] = gerarEvento ? 0x01 : 0x00;
+        enviarComando(socket, Uint8List.fromList(lFrame));
+        break;
+      case "3":
+      // Comando 1 - 0x00 + 0x0D + <tipo_disp> + <num_disp> + <num_saida> + <gera_evt> + <cs>
+        lFrame = List.filled(6, 0);
+        lFrame[0] = 0x00;
+        lFrame[1] = 0x0D;
+        lFrame[2] = tipoDisp;
+        lFrame[3] = can;
+        lFrame[4] = 0x03;
+        lFrame[5] = gerarEvento ? 0x01 : 0x00;
+        enviarComando(socket, Uint8List.fromList(lFrame));
+        break;
+      case "4":
+      // Comando 1 - 0x00 + 0x0D + <tipo_disp> + <num_disp> + <num_saida> + <gera_evt> + <cs>
+        lFrame = List.filled(6, 0);
+        lFrame[0] = 0x00;
+        lFrame[1] = 0x0D;
+        lFrame[2] = tipoDisp;
+        lFrame[3] = can;
+        lFrame[4] = 0x04;
+        lFrame[5] = gerarEvento ? 0x01 : 0x00;
+        enviarComando(socket, Uint8List.fromList(lFrame));
+        break;
+      case "5":
+        // Comando 2 - 0x00 + 0x5C + <tipo_disp> + <num_disp> + <rele> + <gera_evt> + <cs> + <tempo> + <cs>
+        lFrame = List.filled(9, 0);
+        lFrame[0] = 0x00;
+        lFrame[1] = 0x5C;
+        lFrame[2] = tipoDisp;
+        lFrame[3] = can;
+        lFrame[4] = 0x08;
+        lFrame[5] = 0x01;
+        lFrame[6] = calculateChecksum(lFrame.sublist(0, 6));
+        lFrame[7] = 0x01;
+        lFrame[8] = calculateChecksum(lFrame.sublist(0, 8));
+        enviarComandoAuxiliar(socket, Uint8List.fromList(lFrame));
+        break;
+
+      case "6":
+      // Comando 2 - 0x00 + 0x5C + <tipo_disp> + <num_disp> + <rele> + <gera_evt> + <cs> + <tempo> + <cs>
+        lFrame = List.filled(9, 0);
+        lFrame[0] = 0x00;
+        lFrame[1] = 0x5C;
+        lFrame[2] = tipoDisp;
+        lFrame[3] = can;
+        lFrame[4] = 0x06;
+        lFrame[5] = 0x01;
+        lFrame[6] = calculateChecksum(lFrame.sublist(0, 6));
+        lFrame[7] = 0x01;
+        lFrame[8] = calculateChecksum(lFrame.sublist(0, 8));
+        enviarComandoAuxiliar(socket, Uint8List.fromList(lFrame));
+        break;
+      case "7":
+      // Comando 2 - 0x00 + 0x5C + <tipo_disp> + <num_disp> + <rele> + <gera_evt> + <cs> + <tempo> + <cs>
+        lFrame = List.filled(9, 0);
+        lFrame[0] = 0x00;
+        lFrame[1] = 0x5C;
+        lFrame[2] = tipoDisp;
+        lFrame[3] = can;
+        lFrame[4] = 0x07;
+        lFrame[5] = 0x01;
+        lFrame[6] = calculateChecksum(lFrame.sublist(0, 6));
+        lFrame[7] = 0x01;
+        lFrame[8] = calculateChecksum(lFrame.sublist(0, 8));
+        enviarComandoAuxiliar(socket, Uint8List.fromList(lFrame));
+        break;
+      case "8":
+      // Comando 2 - 0x00 + 0x5C + <tipo_disp> + <num_disp> + <rele> + <gera_evt> + <cs> + <tempo> + <cs>
+        lFrame = List.filled(9, 0);
+        lFrame[0] = 0x00;
+        lFrame[1] = 0x5C;
+        lFrame[2] = tipoDisp;
+        lFrame[3] = can;
+        lFrame[4] = 0x08;
+        lFrame[5] = 0x01;
+        lFrame[6] = calculateChecksum(lFrame.sublist(0, 6));
+        lFrame[7] = 0x01;
+        lFrame[8] = calculateChecksum(lFrame.sublist(0, 8));
+        enviarComandoAuxiliar(socket, Uint8List.fromList(lFrame));
+        break;
+
+      default:
+        print('Relé não suportado');
+    }
+
+    await socket.close();
+    print('Conexão encerrada.');
+  } catch (e) {
+    print('Erro ao conectar: $e');
+  }
+}
+
+/// Envia o comando via socket com cálculo do checksum.
+void enviarComando(Socket socket, Uint8List frameHex) {
+  print("Enviando comando...");
+  int tamFrameHex = frameHex.length;
+  List<int> frameEnvioHex = List.filled(tamFrameHex + 1, 0);
+
+  // Calcula checksum
+  for (int i = 0; i < tamFrameHex; i++) {
+    frameEnvioHex[i] = frameHex[i];
+    frameEnvioHex[tamFrameHex] += frameHex[i];
+  }
+
+  print("Comando enviado: ${frameHex.map((b) => b.toRadixString(16).padLeft(2, '0')).join('-')}");
+
+  // Checksum apenas para frames com 2 bytes ou mais
+  int bytesParaEnviar = tamFrameHex;
+  if (tamFrameHex > 1) bytesParaEnviar++;
+
+  if (socket != null) {
+    socket.add(Uint8List.fromList(frameEnvioHex.sublist(0, bytesParaEnviar)));
+    print("Frame enviado: ${frameEnvioHex.sublist(0, bytesParaEnviar).map((b) => b.toRadixString(16).padLeft(2, '0')).join('-')}");
+  }
+}
+
+/// Calcula o checksum do frame.
+int calculateChecksum(List<int> data) {
+  int checksum = 0;
+  for (var b in data) {
+    checksum += b;
+  }
+  return checksum & 0xFF;
+}
+
+
+void enviarComandoAuxiliar(Socket socket, Uint8List frameHex, {bool adicionarChecksumExtra = false}) {
+  print("Enviando comando...");
+  int tamFrameHex = frameHex.length;
+  List<int> frameEnvioHex = List.filled(tamFrameHex + 1, 0);
+
+  // Copia o frame original e calcula checksum extra, se necessário
+  for (int i = 0; i < tamFrameHex; i++) {
+    frameEnvioHex[i] = frameHex[i];
+    if (adicionarChecksumExtra) {
+      frameEnvioHex[tamFrameHex] += frameHex[i]; // Soma para checksum
+    }
+  }
+
+  print("Comando enviado (sem checksum extra): ${frameHex.map((b) => b.toRadixString(16).padLeft(2, '0')).join('-')}");
+
+  int bytesParaEnviar = tamFrameHex;
+  if (adicionarChecksumExtra && tamFrameHex > 1) {
+    bytesParaEnviar++;
+    print("Checksum extra adicionado: ${frameEnvioHex[tamFrameHex].toRadixString(16).padLeft(2, '0')}");
+  }
+
+  socket.add(Uint8List.fromList(frameEnvioHex.sublist(0, bytesParaEnviar)));
+  print("Frame enviado: ${frameEnvioHex.sublist(0, bytesParaEnviar).map((b) => b.toRadixString(16).padLeft(2, '0')).join('-')}");
+}
+
