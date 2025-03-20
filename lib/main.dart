@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:guarita_nice_sdk_flutter/connectAndSendDart.dart';
 
+String ip = "";
+int porta = 9000;
+
 void main() {
   runApp(MyApp());
 }
@@ -36,7 +39,12 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class ConnectionSection extends StatelessWidget {
+class ConnectionSection extends StatefulWidget {
+  @override
+  State<ConnectionSection> createState() => _ConnectionSectionState();
+}
+
+class _ConnectionSectionState extends State<ConnectionSection> {
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -57,15 +65,24 @@ class ConnectionSection extends StatelessWidget {
               children: [
                 Expanded(
                   child: TextField(
+                    onChanged: (value){
+                      setState(() {
+                        ip = value;
+                      });
+                    },
                     decoration: InputDecoration(
                       labelText: 'Endereço IP',
-                      hintText: '177.140.6.126',
                     ),
                   ),
                 ),
                 SizedBox(width: 10),
                 Expanded(
                   child: TextField(
+                    onChanged: (value){
+                      setState(() {
+                        porta = int.parse(value);
+                      });
+                    },
                     decoration: InputDecoration(
                       labelText: 'Porta TCP',
                       hintText: '9000',
@@ -77,8 +94,15 @@ class ConnectionSection extends StatelessWidget {
             SizedBox(height: 10),
             Center(
               child: ElevatedButton(
-                onPressed: () {},
-                child: Text('Desconectar'),
+                onPressed: () {
+                  if(conectado == false){
+                    botaoConectar(context, ip, porta);
+                  }else{
+                    botaoDesconectar(context);
+                  }
+
+                },
+                child: conectado == true ? Text('Desconectar') : Text('Conectar'),
               ),
             ),
           ],
@@ -88,7 +112,12 @@ class ConnectionSection extends StatelessWidget {
   }
 }
 
-class OutputControlSection extends StatelessWidget {
+class OutputControlSection extends StatefulWidget {
+  @override
+  State<OutputControlSection> createState() => _OutputControlSectionState();
+}
+
+class _OutputControlSectionState extends State<OutputControlSection> {
   @override
   Widget build(BuildContext context) {
     return Card(

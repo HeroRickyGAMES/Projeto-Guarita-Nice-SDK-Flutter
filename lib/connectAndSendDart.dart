@@ -1,7 +1,15 @@
+import 'dart:ffi';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:guarita_nice_sdk_flutter/snackBar.dart';
+
+import 'auxiliares.dart';
+
 //Programado por HeroRickyGAMES
+
+var socket;
+bool conectado = false;
 
 int cbDispTotipoDisp(int cbValor) {
   switch (cbValor) {
@@ -22,11 +30,27 @@ int cbDispTotipoDisp(int cbValor) {
   }
 }
 
+botaoConectar(context, String ip, int port) async {
+  try{
+    socket = await Socket.connect(ip, port, timeout: Duration(seconds: 2));
+    print('Conectado ao servidor: ${socket.remoteAddress.address}:${socket.remotePort}');
+    showSnack(context, 'Conectado ao servidor: ${socket.remoteAddress.address}:${socket.remotePort}');
+    conectado = true;
+  }catch(e){
+    showSnack(context, 'Erro de comunicação TCP $e');
+    print('Erro de comunicação TCP $e');
+  }
+}
+
+botaoDesconectar(context) async {
+  await socket.close();
+  showSnack(context, 'Desconectado!');
+  conectado = false;
+}
 
 /// Conecta ao servidor e envia comandos conforme o relé e tipo de dispositivo.
 Future<void> connectAndSend(String ip, int port, String rele, bool gerarEvento, int tipoDispIndex, int can) async {
   try {
-    final socket = await Socket.connect(ip, port, timeout: Duration(seconds: 2));
     print('Conectado ao servidor: ${socket.remoteAddress.address}:${socket.remotePort}');
 
     int tipoDisp = tipoDispIndex; // Converte o índice para tipo de dispositivo
@@ -80,31 +104,37 @@ Future<void> connectAndSend(String ip, int port, String rele, bool gerarEvento, 
         break;
       case "5":
         // Comando 2 - 0x00 + 0x5C + <tipo_disp> + <num_disp> + <rele> + <gera_evt> + <cs> + <tempo> + <cs>
-        lFrame = List.filled(9, 0);
-        lFrame[0] = 0x00;
-        lFrame[1] = 0x5C;
-        lFrame[2] = tipoDisp;
-        lFrame[3] = can;
-        lFrame[4] = 0x08;
-        lFrame[5] = 0x01;
-        lFrame[6] = calculateChecksum(lFrame.sublist(0, 6));
-        lFrame[7] = 0x01;
-        lFrame[8] = calculateChecksum(lFrame.sublist(0, 8));
-        enviarComandoAuxiliar(socket, Uint8List.fromList(lFrame));
+
+        acionaReleAvancado('TX', '00', '06');
+        //lFrame = List.filled(9, 0);
+        //lFrame[0] = 0x00;
+        //lFrame[1] = 0x5C;
+        //lFrame[2] = tipoDisp;
+        //lFrame[3] = can;
+        //lFrame[4] = 0x08;
+        //lFrame[5] = 0x01;
+        //lFrame[6] = calculateChecksum(lFrame.sublist(0, 6));
+        //lFrame[7] = 0x01;
+        //lFrame[8] = calculateChecksum(lFrame.sublist(0, 8));
+        //enviarComandoAuxiliar(socket, Uint8List.fromList(lFrame));
         break;
 
       case "6":
       // Comando 2 - 0x00 + 0x5C + <tipo_disp> + <num_disp> + <rele> + <gera_evt> + <cs> + <tempo> + <cs>
-        lFrame = List.filled(9, 0);
-        lFrame[0] = 0x00;
-        lFrame[1] = 0x5C;
-        lFrame[2] = tipoDisp;
-        lFrame[3] = can;
-        lFrame[4] = 0x06;
-        lFrame[5] = 0x01;
-        lFrame[6] = calculateChecksum(lFrame.sublist(0, 6));
-        lFrame[7] = 0x01;
-        lFrame[8] = calculateChecksum(lFrame.sublist(0, 8));
+        List<int> lFrame = List.filled(9, 0);
+
+        lFrame[0] = 0x00;  // Prefixo fixo
+        lFrame[1] = 0x5C;  // Código da função
+        lFrame[2] = 0x00;
+        lFrame[3] = 0x06;
+        lFrame[4] = 0xFF;
+        lFrame[5] = 0x01 ;
+        lFrame[6] = 0xFF;
+
+        // Calcula o checksum considerando os primeiros 7 bytes
+        lFrame[7] = calculateChecksum(lFrame.sublist(0, 7));
+
+        lFrame[8] = 0x01;  // Campo fixo conforme seu código original
         enviarComandoAuxiliar(socket, Uint8List.fromList(lFrame));
         break;
       case "7":
@@ -139,8 +169,6 @@ Future<void> connectAndSend(String ip, int port, String rele, bool gerarEvento, 
       default:
         print('Relé não suportado');
     }
-
-    await socket.close();
     print('Conexão encerrada.');
   } catch (e) {
     print('Erro ao conectar: $e');
