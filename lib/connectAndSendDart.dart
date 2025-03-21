@@ -116,7 +116,7 @@ Future<void> connectAndSend(String ip, int port, String rele, bool gerarEvento, 
         break;
 
       case "6":
-      // Comando 2 - 0x00 + 0x5C + <tipo_disp> + <num_disp> + <rele> + <gera_evt> + <cs> + <tempo> + <cs>
+
       // Comando 2 - 0x00 + 0x5C + <tipo_disp> + <num_disp> + <rele> + <gerar_evt> + tempo + <cs>
         List<int> lFrame = List.filled(7, 0);
         lFrame[0] = 0x00;
@@ -129,7 +129,7 @@ Future<void> connectAndSend(String ip, int port, String rele, bool gerarEvento, 
         enviarComando(socket, Uint8List.fromList(lFrame));
         break;
       case "7":
-      // Comando 2 - 0x00 + 0x5C + <tipo_disp> + <num_disp> + <rele> + <gera_evt> + <cs> + <tempo> + <cs>
+
       // Comando 2 - 0x00 + 0x5C + <tipo_disp> + <num_disp> + <rele> + <gerar_evt> + tempo + <cs>
         List<int> lFrame = List.filled(7, 0);
         lFrame[0] = 0x00;
@@ -142,7 +142,7 @@ Future<void> connectAndSend(String ip, int port, String rele, bool gerarEvento, 
         enviarComando(socket, Uint8List.fromList(lFrame));
         break;
       case "8":
-      // Comando 2 - 0x00 + 0x5C + <tipo_disp> + <num_disp> + <rele> + <gera_evt> + <cs> + <tempo> + <cs>
+
       // Comando 2 - 0x00 + 0x5C + <tipo_disp> + <num_disp> + <rele> + <gerar_evt> + tempo + <cs>
         List<int> lFrame = List.filled(7, 0);
         lFrame[0] = 0x00;
