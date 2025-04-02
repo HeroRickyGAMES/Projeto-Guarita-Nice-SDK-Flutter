@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -250,7 +251,7 @@ CadastrarControle(){
   frameDisp[5] = 0x5A;
   // Configuração dos receptores
   frameDisp[10] = 0x00;
-  List<bool> receptores = [true, false, true, false, true, false, false, false];
+  List<bool> receptores = [true, true, false, false, false, false, false, false];
   for (int i = 0; i < 8; i++) {
     if (receptores[i]) {
       frameDisp[10] |= (0x01 << i);
@@ -267,4 +268,54 @@ CadastrarControle(){
 
   // Enviar o frame
   enviarComando(socket, Uint8List.fromList(lFrame));
+}
+
+Future<List<int>> receberResposta() {
+  final completer = Completer<List<int>>();
+  List<int> buffer = [];
+
+  socket.listen((data) {
+    buffer.addAll(data);
+
+    // Aqui você pode adicionar alguma lógica para verificar se toda a resposta foi recebida
+    if (buffer.isNotEmpty) {
+      if (!completer.isCompleted) {
+        completer.complete(buffer);
+      }
+    }
+  }, onError: (error) {
+    if (!completer.isCompleted) {
+      completer.completeError(error);
+    }
+  }, onDone: () {
+    if (!completer.isCompleted) {
+      completer.complete(buffer);
+    }
+  });
+
+  return completer.future;
+}
+
+ListarControles() async {
+// Comando para solicitar a quantidade de dispositivos
+  List<int> comando = [0x00, 0x07];
+  int checksum = comando.reduce((a, b) => a + b) & 0xFF;
+  comando.add(checksum);
+
+  // Enviar o comando
+  socket.add(Uint8List.fromList(comando));
+  await socket.flush();
+
+  // Esperar resposta (5 bytes)
+  List<int> resposta = await receberResposta();
+
+  // Validar resposta
+  if (resposta.length != 5 || resposta[1] != 0x07) {
+    throw Exception("Resposta inválida ao ler dispositivos.");
+  }
+
+  // Calcular quantidade de dispositivos
+  int quantidade = (resposta[2] << 8) | resposta[3];
+
+  print(quantidade);
 }

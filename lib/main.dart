@@ -81,12 +81,23 @@ class Controles extends StatefulWidget {
 class _ControlesState extends State<Controles> {
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: ElevatedButton(
-          onPressed: (){
-            CadastrarControle();
-          },
-          child: Text('Testar e cadastrar')),
+    return Column(
+      children: [
+        Center(
+          child: ElevatedButton(
+              onPressed: (){
+                CadastrarControle();
+              },
+              child: Text('Testar e cadastrar')),
+        ),
+        Center(
+          child: ElevatedButton(
+              onPressed: (){
+                ListarControles();
+              },
+              child: Text('Listar controles')),
+        ),
+      ],
     );
   }
 }
