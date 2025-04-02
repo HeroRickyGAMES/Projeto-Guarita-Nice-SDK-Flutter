@@ -3,12 +3,19 @@ import 'package:guarita_nice_sdk_flutter/connectAndSendDart.dart';
 
 String ip = "";
 int porta = 9000;
+bool bnts = true;
+bool controles = false;
 
 void main() {
   runApp(MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -27,9 +34,34 @@ class MyApp extends StatelessWidget {
           child: SingleChildScrollView(
             child: Column(
               children: [
+                Row(
+                  children: [
+                    ElevatedButton(
+                        onPressed: (){
+                          setState(() {
+                            bnts = true;
+                            controles = false;
+                          });
+                        },
+                        child: Text('Botões')
+                    ),
+                    ElevatedButton(
+                        onPressed: (){
+                          setState(() {
+                            bnts = false;
+                            controles = true;
+                          });
+                        },
+                        child: Text('Controles')
+                    ),
+                  ],
+                ),
                 ConnectionSection(),
                 SizedBox(height: 20),
+                if(bnts == true)
                 OutputControlSection(),
+                if(controles == true)
+                  Controles()
               ],
             ),
           ),
@@ -38,6 +70,27 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
+class Controles extends StatefulWidget {
+  const Controles({super.key});
+
+  @override
+  State<Controles> createState() => _ControlesState();
+}
+
+class _ControlesState extends State<Controles> {
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ElevatedButton(
+          onPressed: (){
+            CadastrarControle();
+          },
+          child: Text('Testar e cadastrar')),
+    );
+  }
+}
+
 
 class ConnectionSection extends StatefulWidget {
   @override

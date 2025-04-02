@@ -1,10 +1,8 @@
-import 'dart:ffi';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:guarita_nice_sdk_flutter/snackBar.dart';
 
-import 'auxiliares.dart';
 
 //Programado por HeroRickyGAMES
 
@@ -164,6 +162,22 @@ Future<void> connectAndSend(String ip, int port, String rele, bool gerarEvento, 
   }
 }
 
+void enviarComandoControle(Socket socket, Uint8List comando) {
+  print("Enviando comando...");
+  socket.add(comando);
+  socket.flush();
+  print("Comando enviado para o socket.");
+  socket.listen((Uint8List data) {
+    print("Resposta recebida: ${data.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}");
+    socket.done;
+
+  }, onError: (error) {
+    print("Erro na comunicação: $error");
+  }, onDone: () {
+    print("Conexão encerrada pelo servidor.");
+  });
+}
+
 /// Envia o comando via socket com cálculo do checksum.
 void enviarComando(Socket socket, Uint8List frameHex) {
   print("Enviando comando...");
@@ -223,3 +237,34 @@ void enviarComandoAuxiliar(Socket socket, Uint8List frameHex, {bool adicionarChe
   print("Frame enviado: ${frameEnvioHex.sublist(0, bytesParaEnviar).map((b) => b.toRadixString(16).padLeft(2, '0')).join('-')}");
 }
 
+CadastrarControle(){
+  int opcao = 0x00; // Exemplo: Cadastrar
+  List<int> frameDisp = List.filled(39, 0);
+
+  // Definir valores no frame conforme exemplo
+  frameDisp[0] = 0x11;
+  frameDisp[1] = 0xBC; //<BC>
+  frameDisp[2] = 0x4E; //<4E>
+  frameDisp[3] = 0xCF; //<CF>
+  frameDisp[4] = 0x02;
+  frameDisp[5] = 0x5A;
+  // Configuração dos receptores
+  frameDisp[10] = 0x00;
+  List<bool> receptores = [true, false, true, false, true, false, false, false];
+  for (int i = 0; i < 8; i++) {
+    if (receptores[i]) {
+      frameDisp[10] |= (0x01 << i);
+    }
+  }
+  frameDisp[14] = 0x8F; // Começa "00001"
+  frameDisp.setRange(15, 20, "00001".codeUnits); // Inserindo identificação
+  frameDisp[29] = 0x1F;
+  frameDisp[30] = 0x00;
+
+  // Criando frame final
+  List<int> lFrame = [0x00, 0x43, opcao] + frameDisp;
+
+
+  // Enviar o frame
+  enviarComando(socket, Uint8List.fromList(lFrame));
+}
