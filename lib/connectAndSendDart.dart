@@ -10,6 +10,47 @@ import 'package:guarita_nice_sdk_flutter/snackBar.dart';
 var socket;
 bool conectado = false;
 
+String mapearMarca(int codigo) {
+  const marcas = {
+    0x00: "AUDI", 0x01: "BMW", 0x02: "CHEVROLET", 0x03: "CHRYSLER",
+    0x04: "CITROEN", 0x05: "FERRARI", 0x06: "FIAT", 0x07: "FORD",
+    0x08: "GM", 0x09: "HONDA", 0x0A: "HYUNDAI", 0x0B: "IMPORTADO",
+    0x0C: "JAGUAR", 0x0D: "JEEP", 0x0E: "KIA", 0x0F: "LAMBORGHINI",
+    0x10: "LAND ROVER", 0x11: "MAZDA", 0x12: "MERCEDES", 0x13: "MITSUBISHI",
+    0x14: "MOTO", 0x15: "NISSAN", 0x16: "VEICULO", 0x17: "PEUGEOT",
+    0x18: "PORSCHE", 0x19: "RENAULT", 0x1A: "SUBARU", 0x1B: "SUZUKI",
+    0x1C: "TOYOTA", 0x1D: "VOLKSWAGEN", 0x1E: "VOLVO", 0x1F: "SEM VEICULO"
+  };
+  return marcas[codigo] ?? "Desconhecido";
+}
+
+/// Mapeia os tipos de dispositivo
+String mapearTipoDispositivo(int tipo) {
+  switch (tipo) {
+    case 1: return "RF";
+    case 2: return "TA";
+    case 3: return "CT";
+    case 5: return "BM";
+    case 6: return "TP";
+    case 7: return "SN";
+    default: return "Desconhecido";
+  }
+}
+
+String mapearCor(int codigo) {
+  const cores = {
+    0x00: "AMARELO", 0x01: "AZUL", 0x02: "BEGE", 0x03: "BRANCO",
+    0x04: "CINZA", 0x05: "DOURADO", 0x06: "FANTASIA", 0x07: "GRENA",
+    0x08: "LARANJA", 0x09: "MARROM", 0x0A: "PRATA", 0x0B: "PRETO",
+    0x0C: "ROSA", 0x0D: "ROXO", 0x0E: "VERDE", 0x0F: "VERMELHO"
+  };
+  return cores[codigo] ?? "Desconhecido";
+}
+
+int contadorDispositivos = 0; // Conta os dispositivos lidos
+const int maxDispositivos = 10; // Defina um limite para evitar loop infinito
+late StreamSubscription subscription;
+
 int cbDispTotipoDisp(int cbValor) {
   switch (cbValor) {
     case 0:
@@ -238,6 +279,8 @@ void enviarComandoAuxiliar(Socket socket, Uint8List frameHex, {bool adicionarChe
   print("Frame enviado: ${frameEnvioHex.sublist(0, bytesParaEnviar).map((b) => b.toRadixString(16).padLeft(2, '0')).join('-')}");
 }
 
+//Controles
+
 CadastrarControle(){
   int opcao = 0x00; // Exemplo: Cadastrar
   List<int> frameDisp = List.filled(39, 0);
@@ -270,7 +313,7 @@ CadastrarControle(){
   enviarComando(socket, Uint8List.fromList(lFrame));
 }
 
-Future<List<int>> receberResposta() {
+Future<List<int>> receberResposta(ultimoFrame) {
   final completer = Completer<List<int>>();
   List<int> buffer = [];
 
@@ -296,26 +339,86 @@ Future<List<int>> receberResposta() {
   return completer.future;
 }
 
-ListarControles() async {
-// Comando para solicitar a quantidade de dispositivos
-  List<int> comando = [0x00, 0x07];
-  int checksum = comando.reduce((a, b) => a + b) & 0xFF;
-  comando.add(checksum);
+ouvirControles(ultimoFrame) async {
+  socket.listen((data) {
+    if (data.isEmpty) return;
 
-  // Enviar o comando
-  socket.add(Uint8List.fromList(comando));
-  await socket.flush();
+    print("Recebido: ${data.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}");
 
-  // Esperar resposta (5 bytes)
-  List<int> resposta = await receberResposta();
+    if (data.length == 42 && data[0] == 0x00 && data[1] == 0x46) {
+      // Extraímos os 39 bytes do dispositivo
+      List<int> frameDisp = data.sublist(2, 41);
+      processarDispositivo(frameDisp);
 
-  // Validar resposta
-  if (resposta.length != 5 || resposta[1] != 0x07) {
-    throw Exception("Resposta inválida ao ler dispositivos.");
+      // Solicitar a identificação após processar o dispositivo
+      Future.delayed(Duration(milliseconds: 500), () {
+        solicitarIdentificacao(socket);
+      });
+    } else if (data.length >= 43 && data[0] == 0x00 && data[1] == 0x03) {
+      // Resposta da identificação
+      String rotulo1 = String.fromCharCodes(data.sublist(2, 22)).trim();
+      String rotulo2 = String.fromCharCodes(data.sublist(22, 42)).trim();
+
+      print("\n==== Identificação ====");
+      print("Identificação: '${rotulo1.isNotEmpty ? rotulo1 : rotulo2}'");
+    } else if (data[0] == 0xFF) {
+      print("Erro no frame, reenviando...");
+      Future.delayed(Duration(milliseconds: 500), () {
+        enviarComando(socket, Uint8List.fromList(ultimoFrame));
+      });
+    }
+  }).onError((error) {
+    print("Erro na comunicação: $error");
+  });
+}
+
+/// Solicita a identificação do dispositivo.
+void solicitarIdentificacao(Socket socket) {
+  List<int> frame = [0x00, 0x03];
+  int checksum = calculateChecksum(frame);
+  frame.add(checksum);
+
+  print("Solicitando Identificação...");
+  socket.add(Uint8List.fromList(frame));
+  socket.flush();
+}
+
+ListarControles(){
+  List<int> primeiroFrame = [0x00, 0x46]; // 0x00 + 0x46
+  enviarComando(socket, Uint8List.fromList(primeiroFrame));
+
+  // Aguarda resposta e processa
+  ouvirControles(primeiroFrame);
+}
+
+void processarDispositivo(List<int> frame) {
+  if (frame.length != 39) {
+    print("Erro: Frame de dispositivo inválido!");
+    return;
   }
 
-  // Calcular quantidade de dispositivos
-  int quantidade = (resposta[2] << 8) | resposta[3];
+  int tipoDisp = frame[0];
+  int serial3 = frame[1];
+  int serial2 = frame[2];
+  int serial1 = frame[3];
+  int serial0 = frame[4];
+  int marcaVeiculo = frame[31];
+  int corVeiculo = frame[32];
+  String placa = String.fromCharCodes(frame.sublist(33)).trim();
 
-  print(quantidade);
+  String marca = mapearMarca(marcaVeiculo);
+  String cor = mapearCor(corVeiculo);
+  int serial = (serial3 << 24) | (serial2 << 16) | (serial1 << 8) | serial0;
+
+  print("\n==== Dispositivo Encontrado ====");
+  print("Tipo: ${mapearTipoDispositivo(tipoDisp)}");
+  print("Serial: $serial");
+  print("Marca: $marca");
+  print("Cor: $cor");
+  print("Placa: $placa");
+}
+
+void pararListener() {
+  subscription.cancel();
+  print("Listener parado.");
 }
